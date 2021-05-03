@@ -1,127 +1,42 @@
-%{
-#include<stdio.h>
+%defines
+%{ 
+	/* Definition section */
+	#include<stdio.h> 
+	int flag=0;
+	int yylex();
+	void yyerror(const char *s);
+%} 
 
-int regs[26];
-int base;
-
-%}
-
-%start list
-
-%union { int a; }
-
-
-%token DIGIT LETTER
-
-%left '|'
-%left '&'
+%token NUMBER 
 %left '+' '-'
 %left '*' '/' '%'
-%left UMINUS  /*supplies precedence for unary minus */
-
-%%                   /* beginning of rules section */
-
-list:                       /*empty */
-         |
-        list stat '\n'
-         |
-        list error '\n'
-         {
-           yyerrok;
-         }
-         ;
-stat:    expr
-         {
-           printf("%d\n",$1);
-         }
-         |
-         LETTER '=' expr
-         {
-           regs[$1.a] = $3.a;
-         }
-
-         ;
-
-expr:    '(' expr ')'
-         {
-           $$ = $2;
-         }
-         |
-         expr '*' expr
-         {
-
-           $$.a = $1.a * $3.a;
-         }
-         |
-         expr '/' expr
-         {
-           $$.a = $1.a / $3.a;
-         }
-         |
-         expr '%' expr
-         {
-           $$.a = $1.a % $3.a;
-         }
-         |
-         expr '+' expr
-         {
-           $$.a = $1.a + $3.a;
-         }
-         |
-         expr '-' expr
-         {
-           $$.a = $1.a - $3.a;
-         }
-         |
-         expr '&' expr
-         {
-           $$.a = $1.a & $3.a;
-         }
-         |
-         expr '|' expr
-         {
-           $$.a = $1.a | $3.a;
-         }
-         |
-
-        '-' expr %prec UMINUS
-         {
-           $$.a = -$2.a;
-         }
-         |
-         LETTER
-         {
-           $$.a = regs[$1.a];
-         }
-
-         |
-         number
-         ;
-
-number:  DIGIT
-         {
-           $$ = $1;
-           base = ($1.a==0) ? 8 : 10;
-         }       |
-         number DIGIT
-         {
-           $$.a = base * $1.a + $2.a;
-         }
-         ;
+%left '(' ')'
 
 %%
-main()
-{
- return(yyparse());
-}
+// rule section
+Line: Expression {printf("\nResult=%d\n", $$); };
 
-yyerror(s)
-char *s;
-{
-  fprintf(stderr, "%s\n",s);
-}
+Expression:Expression '+' Expression {$$=$1+$3;} 
+		|  Expression '-' Expression {$$=$1-$3;} 
+		|  Expression '*' Expression {$$=$1*$3;} 
+		|  Expression '/' Expression {$$=$1/$3;} 
+		|  Expression '%' Expression {$$=$1%$3;} 
+		|  '(' Expression ')' {$$=$2;} 
+		|  NUMBER {$$=$1;} 
+		; 
 
-yywrap()
-{
-  return(1);
-}
+%% 
+//driver code 
+int main() { 
+	printf("\nEnter Any Arithmetic Expression:\n"); 
+
+	yyparse(); 
+	if(flag==0) 
+		printf("\nEntered arithmetic expression is Valid\n\n"); 
+} 
+
+void yyerror() 
+{ 
+printf("\nEntered arithmetic expression is Invalid\n\n"); 
+flag=1; 
+} 
